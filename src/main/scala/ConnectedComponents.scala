@@ -9,12 +9,13 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 object ConnectedComponents extends Logging {
 
   def main(args: Array[String]) {
-    if (args.length != 2) {
+    if (args.length < 2) {
       System.err.println("Usage: SparkPageRank <graphfile> <max iterations>")
       System.exit(1)
     }
 
     val maxIterations = args(1).toInt
+    val validateSolution = args.drop(2).headOption.map(_.toBoolean).exists(identity)
 
     val sparkConf = new SparkConf().setAppName("ConnectedComponents")
     val ctx: SparkContext = new SparkContext(sparkConf)
@@ -26,15 +27,26 @@ object ConnectedComponents extends Logging {
 
     // calculate ConnectedComponents
 
-    // 1. using pregel function
-    val byPregel = graph.pregel[Long](Long.MaxValue)(
-      getNewVertexData,
-      sendMessagesFunc,
-      mergeMessages
-    )
+    if (validateSolution) {
+      // 1. using pregel function
+      val byPregel = graph.pregel[Long](Long.MaxValue)(
+        getNewVertexData,
+        sendMessagesFunc,
+        mergeMessages
+      )
 
-    // 2. using connectedComponents directly
-    val byConnectedComponents = graph.connectedComponents()
+      // 2. using connectedComponents directly
+      val byConnectedComponents = graph.connectedComponents()
+
+      val outputPregelledDirectory = "result-p.graph"
+      val outputPregelledFile = "output-p.graph"
+      val outputCCDirectory = "result-cc.graph"
+      val outputCCFile = "output-cc.graph"
+      byPregel.vertices.saveAsTextFile(outputPregelledDirectory)
+      mergeOutputFiles(ctx, outputPregelledDirectory, outputPregelledFile)
+      byConnectedComponents.vertices.saveAsTextFile(outputCCDirectory)
+      mergeOutputFiles(ctx, outputCCDirectory, outputCCFile)
+    }
 
     // 3. implemented by hand
     var iterationsDone = 0
@@ -46,19 +58,19 @@ object ConnectedComponents extends Logging {
       .groupByKey().mapValues(_.toList)
       .cache()
 
-    var actual: RDD[(VertexId, Long)] = graph.vertices.map(e => (e._1, e._2))
+    var indexes: RDD[(VertexId, Long)] = graph.vertices.map(e => (e._1, e._2))
 
     while (iterationsDone < maxIterations) {
-      val vertsWithActualIndexAndNeighbours: RDD[(VertexId, (Long, List[VertexId]))] = actual.join(edges)
+      val vertsWithActualIndexAndNeighbours: RDD[(VertexId, (Long, List[VertexId]))] = indexes.join(edges)
 
       val messages = vertsWithActualIndexAndNeighbours.flatMap {
-        case (src, (actualSrcMin, dsts)) => // here is Pregel paradigm about sending messages to neighbours
-          dsts.map(dst => dst -> actualSrcMin)
+        case (src, (actualSrcMin, nbrs)) => // here is Pregel paradigm about sending messages to neighbours
+          nbrs.map(dst => dst -> actualSrcMin)
       }.groupByKey()
 
-      val newActual = messages.mapValues(_.min)
+      val newIdexes = messages.mapValues(_.min)
 
-      val changesCount = actual.join(newActual).filter {
+      val changesCount = indexes.join(newIdexes).filter {
         case (_, (old, nev)) => nev < old
       }.count()
 
@@ -66,24 +78,16 @@ object ConnectedComponents extends Logging {
         iterationsDone = maxIterations
         log.info("calculating components end")
       } else {
-        actual = newActual
+        indexes = newIdexes
         log.info(s"end iteration $iterationsDone")
         iterationsDone += 1
       }
     }
     val outputDirectory = "result.graph"
     val outputFile = "output.graph"
-    val outputPregelledDirectory = "result-p.graph"
-    val outputPregelledFile = "output-p.graph"
-    val outputCCDirectory = "result-cc.graph"
-    val outputCCFile = "output-cc.graph"
 
-    actual.saveAsTextFile(outputDirectory)
+    indexes.saveAsTextFile(outputDirectory)
     mergeOutputFiles(ctx, outputDirectory, outputFile)
-    byPregel.vertices.saveAsTextFile(outputPregelledDirectory)
-    mergeOutputFiles(ctx, outputPregelledDirectory, outputPregelledFile)
-    byConnectedComponents.vertices.saveAsTextFile(outputCCDirectory)
-    mergeOutputFiles(ctx, outputCCDirectory, outputCCFile)
 
     ctx.stop()
   }
