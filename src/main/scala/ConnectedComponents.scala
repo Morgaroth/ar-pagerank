@@ -20,21 +20,21 @@ object ConnectedComponents extends Logging {
     val ctx: SparkContext = new SparkContext(sparkConf)
 
     // load graph and copy vertex id to vertex data
-    var graph: Graph[Long, PartitionID] = GraphLoader
+    val graph: Graph[Long, PartitionID] = GraphLoader
       .edgeListFile(ctx, args(0))
       .mapVertices[Long]((x, y) => x)
 
     // calculate ConnectedComponents
 
     // 1. using pregel function
-    val pregelled = graph.pregel[Long](Long.MaxValue)(
+    val byPregel = graph.pregel[Long](Long.MaxValue)(
       getNewVertexData,
       sendMessagesFunc,
       mergeMessages
     )
 
     // 2. using connectedComponents directly
-    val connectedComponents = graph.connectedComponents()
+    val byConnectedComponents = graph.connectedComponents()
 
     // 3. implemented by hand
     var iterationsDone = 0
@@ -56,7 +56,7 @@ object ConnectedComponents extends Logging {
           dsts.map(dst => dst -> actualSrcMin)
       }.groupByKey()
 
-      val newActual = messages.mapValues(_.toList.min)
+      val newActual = messages.mapValues(_.min)
 
       val changesCount = actual.join(newActual).filter {
         case (_, (old, nev)) => nev < old
@@ -80,9 +80,9 @@ object ConnectedComponents extends Logging {
 
     actual.saveAsTextFile(outputDirectory)
     mergeOutputFiles(ctx, outputDirectory, outputFile)
-    pregelled.vertices.saveAsTextFile(outputPregelledDirectory)
+    byPregel.vertices.saveAsTextFile(outputPregelledDirectory)
     mergeOutputFiles(ctx, outputPregelledDirectory, outputPregelledFile)
-    connectedComponents.vertices.saveAsTextFile(outputCCDirectory)
+    byConnectedComponents.vertices.saveAsTextFile(outputCCDirectory)
     mergeOutputFiles(ctx, outputCCDirectory, outputCCFile)
 
     ctx.stop()
@@ -113,23 +113,3 @@ object ConnectedComponents extends Logging {
       Iterator((Math.max(edge.srcId, edge.dstId), Math.min(edge.srcAttr, edge.dstAttr)))
     else Iterator.empty
 }
-
-
-//
-//// :( nie umiem englisz na tyle
-//// oblicz wszystkie wiadomości, robi się z nich tabela (VertexId, Wartość)
-//// wiadomości to najmniejsze liczby
-//val messages = graph.aggregateMessages(sendMessage, mergeMessages, new TripletFields(true, true, false))
-//
-//// to składamy z aktualnym grafem joinem, przy czym wyliczamy mniejszą
-//// wartość z aktualnego wierzchołka i przychodzącej wartości
-//graph = graph.joinVertices(messages)(getNewVertexData)
-////    val output = ranks.collect()
-////    utput.foreach(tup => println(tup._1 + " has rank: " + tup._2 + "."))
-//if (messages.count() <= 0) {
-//  iterationsDone = maxIterations
-//  log.info("calculating components end")
-//} else {
-//  log.info(s"end iteration $iterationsDone")
-//  iterationsDone += 1
-//}
