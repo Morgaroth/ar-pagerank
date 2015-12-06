@@ -57,9 +57,9 @@ object ConnectedComponents extends Logging {
       .flatMap(e => List((e.dstId, e.srcId), (e.srcId, e.dstId)))
       .distinct()
       .groupByKey().mapValues(_.toList).map {
-        case (k, nbrs) => k -> nbrs.filter(_.toLong > k)
-      }.filter(_._2.nonEmpty)
-//      .partitionBy(new HashPartitioner(8))
+      case (k, nbrs) => k -> nbrs.filter(_.toLong > k)
+    }.filter(_._2.nonEmpty)
+      //      .partitionBy(new HashPartitioner(8))
       .cache()
 
     var indexes: RDD[(VertexId, Long)] = graph.vertices.map(e => (e._1, e._2))
@@ -87,12 +87,14 @@ object ConnectedComponents extends Logging {
         iterationsDone += 1
       }
     }
-    val outputDirectory = "result.graph"
-    val outputFile = "output.graph"
 
-    indexes.saveAsTextFile(outputDirectory)
-    mergeOutputFiles(ctx, outputDirectory, outputFile)
+    if (validateSolution) {
+      val outputDirectory = "result.graph"
+      val outputFile = "output.graph"
 
+      indexes.saveAsTextFile(outputDirectory)
+      mergeOutputFiles(ctx, outputDirectory, outputFile)
+    }
     ctx.stop()
   }
 
