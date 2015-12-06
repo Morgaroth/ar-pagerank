@@ -3,38 +3,38 @@
 TRIES="1 2"
 PROJ_HOME="$HOME/AR/zad3/ar-pagerank"
 
-for SIZE in "$@"; do
+for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -l -N 1_nodes_ar_zad3 nodes=1:ppn=12,walltime=00:05:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 1_nodes_ar_zad3 -l nodes=1:ppn=12,walltime=00:05:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
 	done
 done
 
-for SIZE in "$@"; do
+for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -l -N 2_nodes_ar_zad3 nodes=2:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 2_nodes_ar_zad3 -l nodes=2:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
 	done
 done
 
-for SIZE in "$@"; do
+for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -l -N 4_nodes_ar_zad3 nodes=4:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 4_nodes_ar_zad3 -l nodes=4:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
 	done
 done
 
-for SIZE in "$@"; do
+for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N -N 8_nodes_ar_zad3 -l nodes=8:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 8_nodes_ar_zad3 -l nodes=8:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
 	done
 done
 
-for SIZE in "$@"; do
+for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -l nodes=12:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 12_nodes_ar_zad3 -l nodes=12:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
 	done
 done
 
-for SIZE in "$@"; do
+for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -l nodes=16:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 16_nodes_ar_zad3 -l nodes=16:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
 	done
 done
