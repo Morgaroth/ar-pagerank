@@ -3,9 +3,8 @@ import java.net.URI
 
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.graphx._
-import org.apache.spark.graphx.util.GraphGenerators
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{HashPartitioner, Logging, SparkConf, SparkContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 object ConnectedComponents extends Logging {
 
@@ -14,6 +13,8 @@ object ConnectedComponents extends Logging {
       System.err.println("Usage: SparkPageRank <graphfile> <max iterations>")
       System.exit(1)
     }
+
+    val startTime = System.currentTimeMillis()
 
     val maxIterations = args(1).toInt
     val validateSolution = args.drop(2).headOption.map(_.toBoolean).exists(identity)
@@ -49,8 +50,11 @@ object ConnectedComponents extends Logging {
       mergeOutputFiles(ctx, outputCCDirectory, outputCCFile)
     }
 
+    val iterationsStart = System.currentTimeMillis()
+
     // 3. implemented by hand
     var iterationsDone = 0
+    var done = false
 
     // duplicate edges to make undirected graph from directed
     val edges: RDD[(VertexId, List[VertexId])] = graph.edges
@@ -64,7 +68,7 @@ object ConnectedComponents extends Logging {
 
     var indexes: RDD[(VertexId, Long)] = graph.vertices.map(e => (e._1, e._2))
 
-    while (iterationsDone < maxIterations) {
+    while (iterationsDone < maxIterations && !done) {
       val vertsWithActualIndexAndNeighbours: RDD[(VertexId, (Long, List[VertexId]))] = indexes.join(edges)
 
       val messages = vertsWithActualIndexAndNeighbours.flatMap {
@@ -79,8 +83,8 @@ object ConnectedComponents extends Logging {
       }.count()
 
       if (changesCount <= 0) {
-        iterationsDone = maxIterations
-        log.info("calculating components end")
+        done = true
+        log.info(s"calculating components end after $iterationsDone")
       } else {
         indexes = newIdexes
         log.info(s"end iteration $iterationsDone with $changesCount changes")
@@ -95,6 +99,13 @@ object ConnectedComponents extends Logging {
       indexes.saveAsTextFile(outputDirectory)
       mergeOutputFiles(ctx, outputDirectory, outputFile)
     }
+
+    val iterationsEnd = System.currentTimeMillis()
+    log.info(s"przygotowanie= ${iterationsStart - startTime}")
+    log.info(s"petla= ${iterationsEnd - iterationsStart}, iteracji= $iterationsDone")
+    log.info(s"iteracji= $iterationsDone")
+    println(s" ${iterationsStart - startTime} ${iterationsEnd - iterationsStart}")
+
     ctx.stop()
   }
 
