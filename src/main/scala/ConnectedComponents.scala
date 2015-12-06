@@ -3,8 +3,9 @@ import java.net.URI
 
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.graphx._
+import org.apache.spark.graphx.util.GraphGenerators
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{HashPartitioner, Logging, SparkConf, SparkContext}
 
 object ConnectedComponents extends Logging {
 
@@ -55,7 +56,10 @@ object ConnectedComponents extends Logging {
     val edges: RDD[(VertexId, List[VertexId])] = graph.edges
       .flatMap(e => List((e.dstId, e.srcId), (e.srcId, e.dstId)))
       .distinct()
-      .groupByKey().mapValues(_.toList)
+      .groupByKey().mapValues(_.toList).map {
+        case (k, nbrs) => k -> nbrs.filter(_.toLong > k)
+      }.filter(_._2.nonEmpty)
+//      .partitionBy(new HashPartitioner(8))
       .cache()
 
     var indexes: RDD[(VertexId, Long)] = graph.vertices.map(e => (e._1, e._2))
@@ -65,7 +69,7 @@ object ConnectedComponents extends Logging {
 
       val messages = vertsWithActualIndexAndNeighbours.flatMap {
         case (src, (actualSrcMin, nbrs)) => // here is Pregel paradigm about sending messages to neighbours
-          nbrs.map(dst => dst -> actualSrcMin)
+          nbrs.filter(_.toLong > actualSrcMin).map(dst => dst -> actualSrcMin)
       }.groupByKey()
 
       val newIdexes = messages.mapValues(_.min)
@@ -79,7 +83,7 @@ object ConnectedComponents extends Logging {
         log.info("calculating components end")
       } else {
         indexes = newIdexes
-        log.info(s"end iteration $iterationsDone")
+        log.info(s"end iteration $iterationsDone with $changesCount changes")
         iterationsDone += 1
       }
     }
