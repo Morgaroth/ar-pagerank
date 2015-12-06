@@ -5,6 +5,8 @@ start-multinode-spark-cluster.sh
 
 export SPARK_CONF_DIR="$PROJ_HOME/src/main/resources/log4j.properties"
 
+netstat -at | grep 7077
+
 ${SPARK_HOME}/bin/spark-submit \
     --master spark://`hostname`:7077 \
     --class ConnectedComponents \
