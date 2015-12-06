@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/bin/env bash
+#PBS -A plgmorgaroth2015b
 
 module load plgrid/apps/spark
 start-multinode-spark-cluster.sh
