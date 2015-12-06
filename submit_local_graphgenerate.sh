@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/bin/bash
 
 module load plgrid/apps/spark
 module load plgrid/tools/java8
@@ -13,3 +13,5 @@ ${SPARK_HOME}/bin/spark-submit \
     --master local[*] \
     ${PROJ_HOME}/target/scala-2.10/sparkpagerank_2.10-1.0.jar \
     $1 $2
+
+rm *.crc

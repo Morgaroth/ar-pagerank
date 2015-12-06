@@ -20,7 +20,8 @@ object GenerateGraph {
 
     val graph = GraphGenerators.logNormalGraph(ctx, verts)
     val tmp = s"output_$output"
-    graph.edges.saveAsTextFile(tmp)
+
+    graph.edges.map(e => s"${e.srcId}, ${e.dstId}").saveAsTextFile(tmp)
     mergeOutputFiles(ctx, tmp, output)
 
     ctx.stop()
