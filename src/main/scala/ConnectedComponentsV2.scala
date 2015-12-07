@@ -4,7 +4,7 @@ import java.net.URI
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.graphx._
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{HashPartitioner, Logging, SparkConf, SparkContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 object ConnectedComponentsV2 extends Logging {
 
@@ -17,8 +17,9 @@ object ConnectedComponentsV2 extends Logging {
     val startTime = System.currentTimeMillis()
 
     val maxIterations = args(1).toInt
+    val validateSolution = args.drop(2).headOption.map(_.toBoolean).exists(identity)
 
-    val sparkConf = new SparkConf().setAppName("ConnectedComponentsV2")
+    val sparkConf = new SparkConf().setAppName("ConnectedComponents")
     val ctx: SparkContext = new SparkContext(sparkConf)
 
     // load graph and copy vertex id to vertex data
@@ -26,8 +27,32 @@ object ConnectedComponentsV2 extends Logging {
       .edgeListFile(ctx, args(0))
       .mapVertices[Long]((x, y) => x)
 
+    // calculate ConnectedComponents
+
+    if (validateSolution) {
+      // 1. using pregel function
+      val byPregel = graph.pregel[Long](Long.MaxValue)(
+        getNewVertexData,
+        sendMessagesFunc,
+        mergeMessages
+      )
+
+      // 2. using connectedComponents directly
+      val byConnectedComponents = graph.connectedComponents()
+
+      val outputPregelledDirectory = "result-p.graph"
+      val outputPregelledFile = "output-p.graph"
+      val outputCCDirectory = "result-cc.graph"
+      val outputCCFile = "output-cc.graph"
+      byPregel.vertices.saveAsTextFile(outputPregelledDirectory)
+      mergeOutputFiles(ctx, outputPregelledDirectory, outputPregelledFile)
+      byConnectedComponents.vertices.saveAsTextFile(outputCCDirectory)
+      mergeOutputFiles(ctx, outputCCDirectory, outputCCFile)
+    }
+
     val iterationsStart = System.currentTimeMillis()
 
+    // 3. implemented by hand
     var iterationsDone = 0
     var done = false
 
@@ -38,7 +63,7 @@ object ConnectedComponentsV2 extends Logging {
       .groupByKey().mapValues(_.toList).map {
       case (k, nbrs) => k -> nbrs.filter(_.toLong > k)
     }.filter(_._2.nonEmpty)
-      .partitionBy(new HashPartitioner(16))
+      //      .partitionBy(new HashPartitioner(8))
       .cache()
 
     var indexes: RDD[(VertexId, Long)] = graph.vertices.map(e => (e._1, e._2))
@@ -67,11 +92,19 @@ object ConnectedComponentsV2 extends Logging {
       }
     }
 
+    if (validateSolution) {
+      val outputDirectory = "result.graph"
+      val outputFile = "output.graph"
+
+      indexes.saveAsTextFile(outputDirectory)
+      mergeOutputFiles(ctx, outputDirectory, outputFile)
+    }
+
     val iterationsEnd = System.currentTimeMillis()
     log.info(s"przygotowanie= ${iterationsStart - startTime}")
     log.info(s"petla= ${iterationsEnd - iterationsStart}, iteracji= $iterationsDone")
     log.info(s"iteracji= $iterationsDone")
-    println(s"${iterationsStart - startTime},${iterationsEnd - iterationsStart},$iterationsDone")
+    println(s"${iterationsStart - startTime},${iterationsEnd - iterationsStart}")
 
     ctx.stop()
   }

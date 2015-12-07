@@ -4,9 +4,9 @@ import java.net.URI
 import org.apache.hadoop.fs.{FileSystem, FileUtil, Path}
 import org.apache.spark.graphx._
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{HashPartitioner, Logging, SparkConf, SparkContext}
 
-object ConnectedComponents extends Logging {
+object ConnectedComponentsV3 extends Logging {
 
   def main(args: Array[String]) {
     if (args.length < 2) {
@@ -17,9 +17,8 @@ object ConnectedComponents extends Logging {
     val startTime = System.currentTimeMillis()
 
     val maxIterations = args(1).toInt
-    val validateSolution = args.drop(2).headOption.map(_.toBoolean).exists(identity)
 
-    val sparkConf = new SparkConf().setAppName("ConnectedComponents")
+    val sparkConf = new SparkConf().setAppName("ConnectedComponentsV2")
     val ctx: SparkContext = new SparkContext(sparkConf)
 
     // load graph and copy vertex id to vertex data
@@ -27,32 +26,8 @@ object ConnectedComponents extends Logging {
       .edgeListFile(ctx, args(0))
       .mapVertices[Long]((x, y) => x)
 
-    // calculate ConnectedComponents
-
-    if (validateSolution) {
-      // 1. using pregel function
-      val byPregel = graph.pregel[Long](Long.MaxValue)(
-        getNewVertexData,
-        sendMessagesFunc,
-        mergeMessages
-      )
-
-      // 2. using connectedComponents directly
-      val byConnectedComponents = graph.connectedComponents()
-
-      val outputPregelledDirectory = "result-p.graph"
-      val outputPregelledFile = "output-p.graph"
-      val outputCCDirectory = "result-cc.graph"
-      val outputCCFile = "output-cc.graph"
-      byPregel.vertices.saveAsTextFile(outputPregelledDirectory)
-      mergeOutputFiles(ctx, outputPregelledDirectory, outputPregelledFile)
-      byConnectedComponents.vertices.saveAsTextFile(outputCCDirectory)
-      mergeOutputFiles(ctx, outputCCDirectory, outputCCFile)
-    }
-
     val iterationsStart = System.currentTimeMillis()
 
-    // 3. implemented by hand
     var iterationsDone = 0
     var done = false
 
@@ -61,17 +36,19 @@ object ConnectedComponents extends Logging {
       .flatMap(e => List((e.dstId, e.srcId), (e.srcId, e.dstId)))
       .distinct()
       .groupByKey().mapValues(_.toList).map {
-      case (k, nbrs) => k -> nbrs.filter(_.toLong > k)
+      case (k, nbrs) => k -> nbrs.filter(_ > k)
     }.filter(_._2.nonEmpty)
+      .partitionBy(new HashPartitioner(16))
+      .cache()
 
     var indexes: RDD[(VertexId, Long)] = graph.vertices.map(e => (e._1, e._2))
 
     while (iterationsDone < maxIterations && !done) {
-      val vertsWithActualIndexAndNeighbours: RDD[(VertexId, (Long, List[VertexId]))] = indexes.join(edges)
+      val vertsWithActualIndexAndNeighbours: RDD[(VertexId, (List[VertexId], VertexId))] = edges.join(indexes)
 
       val messages = vertsWithActualIndexAndNeighbours.flatMap {
-        case (src, (actualSrcMin, nbrs)) => // here is Pregel paradigm about sending messages to neighbours
-          nbrs.filter(_.toLong > actualSrcMin).map(dst => dst -> actualSrcMin)
+        case (src, (nbrs, actualSrcMin)) => // here is Pregel paradigm about sending messages to neighbours
+          nbrs.filter(_ > actualSrcMin).map(dst => dst -> actualSrcMin)
       }.groupByKey()
 
       val newIdexes = messages.mapValues(_.min)
@@ -90,19 +67,11 @@ object ConnectedComponents extends Logging {
       }
     }
 
-    if (validateSolution) {
-      val outputDirectory = "result.graph"
-      val outputFile = "output.graph"
-
-      indexes.saveAsTextFile(outputDirectory)
-      mergeOutputFiles(ctx, outputDirectory, outputFile)
-    }
-
     val iterationsEnd = System.currentTimeMillis()
     log.info(s"przygotowanie= ${iterationsStart - startTime}")
     log.info(s"petla= ${iterationsEnd - iterationsStart}, iteracji= $iterationsDone")
     log.info(s"iteracji= $iterationsDone")
-    println(s"${iterationsStart - startTime},${iterationsEnd - iterationsStart}")
+    println(s"${iterationsStart - startTime},${iterationsEnd - iterationsStart},$iterationsDone")
 
     ctx.stop()
   }
