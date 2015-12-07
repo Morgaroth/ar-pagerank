@@ -3,6 +3,11 @@
 TRIES="1 2"
 PROJ_HOME="$HOME/AR/zad3/ar-pagerank"
 
+module load plgrid/tools/java8
+module load tools/sbt/0.13.9
+
+cd $PROJ_HOME && sbt package
+
 #for GRAPH_URI in "$@"; do
 #	for i in ${TRIES}; do
 #		qsub -N 1_nodes_ar_zad3 -l nodes=1:ppn=12,walltime=00:05:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=1 submit_cc.sh
