@@ -16,19 +16,19 @@ cd $PROJ_HOME && sbt package
 
 for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N 2_nodes_ar_zad3 -l nodes=3:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=2 submit_cc.sh
+		qsub -N 2_nodes_ar_zad3 -l nodes=3:ppn=12,walltime=00:25:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=2 submit_cc.sh
 	done
 done
 
 for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N 4_nodes_ar_zad3 -l nodes=5:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=4 submit_cc.sh
+		qsub -N 4_nodes_ar_zad3 -l nodes=5:ppn=12,walltime=00:20:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=4 submit_cc.sh
 	done
 done
 
 for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N 8_nodes_ar_zad3 -l nodes=9:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=8 submit_cc.sh
+		qsub -N 8_nodes_ar_zad3 -l nodes=9:ppn=12,walltime=00:15:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=8 submit_cc.sh
 	done
 done
 
