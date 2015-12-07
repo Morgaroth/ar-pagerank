@@ -5,36 +5,36 @@ PROJ_HOME="$HOME/AR/zad3/ar-pagerank"
 
 #for GRAPH_URI in "$@"; do
 #	for i in ${TRIES}; do
-#		qsub -N 1_nodes_ar_zad3 -l nodes=1:ppn=12,walltime=00:05:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+#		qsub -N 1_nodes_ar_zad3 -l nodes=1:ppn=12,walltime=00:05:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=1 submit_cc.sh
 #	done
 #done
 
 for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N 2_nodes_ar_zad3 -l nodes=3:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 2_nodes_ar_zad3 -l nodes=3:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=2 submit_cc.sh
 	done
 done
 
 for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N 4_nodes_ar_zad3 -l nodes=5:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 4_nodes_ar_zad3 -l nodes=5:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=4 submit_cc.sh
 	done
 done
 
 for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N 8_nodes_ar_zad3 -l nodes=9:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 8_nodes_ar_zad3 -l nodes=9:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=8 submit_cc.sh
 	done
 done
 
 for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N 12_nodes_ar_zad3 -l nodes=13:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 12_nodes_ar_zad3 -l nodes=13:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=12 submit_cc.sh
 	done
 done
 
 for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N 16_nodes_ar_zad3 -l nodes=17:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI" submit_cc.sh
+		qsub -N 16_nodes_ar_zad3 -l nodes=17:ppn=12,walltime=00:10:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=16 submit_cc.sh
 	done
 done

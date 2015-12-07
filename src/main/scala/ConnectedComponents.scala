@@ -104,7 +104,7 @@ object ConnectedComponents extends Logging {
     log.info(s"przygotowanie= ${iterationsStart - startTime}")
     log.info(s"petla= ${iterationsEnd - iterationsStart}, iteracji= $iterationsDone")
     log.info(s"iteracji= $iterationsDone")
-    println(s" ${iterationsStart - startTime} ${iterationsEnd - iterationsStart}")
+    println(s"${iterationsStart - startTime},${iterationsEnd - iterationsStart}")
 
     ctx.stop()
   }
