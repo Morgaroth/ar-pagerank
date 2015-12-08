@@ -8,21 +8,21 @@ module load tools/sbt/0.13.9
 
 cd $PROJ_HOME && sbt package
 
-#for GRAPH_URI in "$@"; do
-#	for i in ${TRIES}; do
-#		qsub -N 1_nodes_ar_zad3 -l nodes=1:ppn=12,walltime=00:05:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=1 submit_cc.sh
-#	done
-#done
-
 for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N 2_nodes_ar_zad3 -l nodes=3:ppn=12,walltime=00:35:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=2 submit_cc.sh
+		qsub -N 1_nodes_ar_zad3 -l nodes=1:ppn=12,walltime=01:20:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=1 submit_cc.sh
 	done
 done
 
 for GRAPH_URI in "$@"; do
 	for i in ${TRIES}; do
-		qsub -N 4_nodes_ar_zad3 -l nodes=5:ppn=12,walltime=00:30:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=4 submit_cc.sh
+		qsub -N 2_nodes_ar_zad3 -l nodes=3:ppn=12,walltime=01:00:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=2 submit_cc.sh
+	done
+done
+
+for GRAPH_URI in "$@"; do
+	for i in ${TRIES}; do
+		qsub -N 4_nodes_ar_zad3 -l nodes=5:ppn=12,walltime=00:40:00 -v PROJ_HOME="$PROJ_HOME",GRAPH_URI="$GRAPH_URI",NODES=4 submit_cc.sh
 	done
 done
 
